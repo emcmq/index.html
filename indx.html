@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Избегай препятствий</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #222; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+    canvas { background: black; display: block; margin: 10px auto; }
+    #controls {
+      width: 300px;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    button {
+      width: 140px;
+      padding: 15px;
+      font-size: 18px;
+      border: none;
+      border-radius: 8px;
+      background: #444;
+      color: white;
+      user-select: none;
+    }
+    button:active {
+      background: #666;
+    }
+  </style>
+</head>
+<body>
+
+<div id="controls">
+  <button id="leftBtn">Влево</button>
+  <button id="rightBtn">Вправо</button>
+</div>
+
+<canvas id="gameCanvas" width="300" height="500"></canvas>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+let player = { x: 140, y: 450, w: 20, h: 20 };
+let obstacles = [];
+let score = 0;
+let gameOver = false;
+let level = 1;
+
+// Настройки уровней: цвет, скорость падения и шанс появления
+const levelSettings = [
+  { color: "red", speed: 4, spawnChance: 0.02 },
+  { color: "orange", speed: 5, spawnChance: 0.03 },
+  { color: "yellow", speed: 6, spawnChance: 0.04 },
+  { color: "lime", speed: 7, spawnChance: 0.05 },
+  { color: "cyan", speed: 8, spawnChance: 0.06 },
+  { color: "magenta", speed: 9, spawnChance: 0.07 },
+];
+
+function drawPlayer() {
+  ctx.fillStyle = "lime";
+  ctx.fillRect(player.x, player.y, player.w, player.h);
+}
+
+function drawObstacles() {
+  ctx.fillStyle = levelSettings[Math.min(level-1, levelSettings.length-1)].color;
+  for (let obs of obstacles) {
+    ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+  }
+}
+
+function updateObstacles() {
+  let settings = levelSettings[Math.min(level-1, levelSettings.length-1)];
+  for (let obs of obstacles) {
+    obs.y += settings.speed;
+  }
+  obstacles = obstacles.filter(obs => obs.y < canvas.height);
+  if (Math.random() < settings.spawnChance) {
+    obstacles.push({ x: Math.random() * (canvas.width - 20), y: -20, w: 20, h: 20 });
+  }
+}
+
+function checkCollision() {
+  for (let obs of obstacles) {
+    if (player.x < obs.x + obs.w &&
+        player.x + player.w > obs.x &&
+        player.y < obs.y + obs.h &&
+        player.y + player.h > obs.y) {
+      gameOver = true;
+    }
+  }
+}
+
+function drawScore() {
+  ctx.fillStyle = "white";
+  ctx.font = "16px sans-serif";
+  ctx.fillText("Score: " + score, 10, 20);
+  ctx.fillText("Level: " + level, 10, 40);
+}
+
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft" && player.x > 0) player.x -= 20;
+  if (e.key === "ArrowRight" && player.x < canvas.width - player.w) player.x += 20;
+});
+
+document.getElementById("leftBtn").addEventListener("touchstart", () => {
+  if (player.x > 0) player.x -= 20;
+});
+document.getElementById("rightBtn").addEventListener("touchstart", () => {
+  if (player.x < canvas.width - player.w) player.x += 20;
+});
+document.getElementById("leftBtn").addEventListener("mousedown", () => {
+  if (player.x > 0) player.x -= 20;
+});
+document.getElementById("rightBtn").addEventListener("mousedown", () => {
+  if (player.x < canvas.width - player.w) player.x += 20;
+});
+
+function gameLoop() {
+  if (gameOver) {
+    ctx.fillStyle = "white";
+    ctx.font = "24px sans-serif";
+    ctx.fillText("Game Over!", 80, 250);
+    return;
+  }
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawPlayer();
+  updateObstacles();
+  drawObstacles();
+  checkCollision();
+  drawScore();
+  score++;
+
+  // Каждые 500 очков повышаем уровень
+  if (score % 500 === 0) {
+    level++;
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+</body>
+</html>
